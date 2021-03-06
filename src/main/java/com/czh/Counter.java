@@ -2,6 +2,9 @@ package com.czh;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 计数器类
+ */
 public class Counter {
 
     /**

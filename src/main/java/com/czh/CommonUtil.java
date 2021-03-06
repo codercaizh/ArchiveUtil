@@ -5,9 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +19,9 @@ public class CommonUtil {
     private static Pattern pattern = Pattern.compile("20[1-2][0-9][0-1][0-9][0-3][0-9]");
 
     private static Map<String,Long> currentTimeMap = new ConcurrentHashMap<>();
+
+    private static Map<String,Boolean> typeMap = new ConcurrentHashMap<String,Boolean>();
+
     /**
      * 快速复制文件
      *
@@ -128,7 +129,10 @@ public class CommonUtil {
             futures.add(executorService.submit(callable));
         }
         for (Future future : futures) {
-            result.add(future.get());
+            Object file = future.get();
+            if(file != null){
+                result.add(file);
+            }
         }
         return result;
     }
@@ -152,6 +156,7 @@ public class CommonUtil {
         if(startTime == null){
             throw new RuntimeException("该计时器不存在");
         }
+        currentTimeMap.remove(event);
         return System.currentTimeMillis() - startTime;
     }
 
@@ -179,10 +184,10 @@ public class CommonUtil {
      */
     public static List<File> getFileList(File dir){
         List<File> list = new ArrayList<>();
-        if(dir.isDirectory()){
-            getAllFiles(list,dir);
-        }else{
+        if(isFile(dir)){
             list.add(dir);
+        }else{
+            getAllFiles(list,dir);
         }
         return list;
     }
@@ -197,15 +202,40 @@ public class CommonUtil {
         for (int i = 0; i < allFiles.length; i++) {
             File file = allFiles[i];
 
-            if (file.isDirectory()) {
-                getAllFiles(fileList, file);
-            } else  {
+            if (isFile(file)) {
                 fileList.add(file);
                 int size = fileList.size();
                 if(size % 100 == 0){
                     ArchiveUtil.logger.info("已加载{}个文件,请稍等",size);
                 }
+            } else {
+                getAllFiles(fileList, file);
             }
+        }
+    }
+
+    /**
+     * 是否为文件
+     * @param file
+     * @return
+     */
+    private static boolean isFile(File file){
+        String type = null;
+        int index = file.getName().lastIndexOf(".");
+        if(index > 0){
+            type = file.getName().substring(index).trim().toLowerCase();
+            type = type.length() > 0 ? type : null;
+        }
+        if(type == null){
+            return file.isFile();
+        }else if(typeMap.containsKey(type)){
+            return true;
+        }else {
+            boolean isFile = file.isFile();
+            if(isFile){
+                typeMap.put(type,isFile);
+            }
+            return isFile;
         }
     }
 }

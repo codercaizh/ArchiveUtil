@@ -11,13 +11,18 @@ public class ArchiveUI {
     public static final Logger logger = LoggerFactory.getLogger(ArchiveUI.class);
 
     public static void main(String[] args) throws Exception {
+        boolean isSkipInput = false;
+        if(args.length > 1){
+            isSkipInput = true;
+        }
+
         logger.info("欢迎使用归档工具，请按要求输入配置");
         Scanner sc = new Scanner(System.in);
         while(true){
             logger.info("请输入需要归档备份的文件夹地址");
-            String srcPath = getInput(sc);
+            String srcPath = isSkipInput ? args[0] : getInput(sc);
             logger.info("请输入存放归档备份的文件夹地址");
-            String desPath = getInput(sc);
+            String desPath = isSkipInput ? args[1] : getInput(sc);
             logger.info("正在检查文件夹地址的合法性");
             File src = new File(srcPath);
             if (!src.exists()){
@@ -57,7 +62,7 @@ public class ArchiveUI {
             if(ArchiveUtil.threadCount == 0){
                 int defaultThreadCount = 2;
                 logger.info("请输入并发归档数(取值范围:1 - 64,默认值为{}),若不了解该参数,则直接回车下一步",defaultThreadCount);
-                String c = getInput(sc);
+                String c = isSkipInput ? (args.length == 3 ? args[2] : (defaultThreadCount + "")) : getInput(sc);
                 if(c != null && c.length() > 0){
                     try{
                         int count = Integer.parseInt(c);
@@ -77,6 +82,10 @@ public class ArchiveUI {
             ArchiveUtil.targetDir = des;
             logger.info("开始进行归档");
             ArchiveUtil.run();
+            if(args.length > 1){
+                logger.info("归档完毕,谢谢使用");
+                break;
+            }
         }
     }
 

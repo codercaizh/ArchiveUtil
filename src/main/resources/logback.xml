@@ -22,6 +22,14 @@
     <root>
         <level value="info" />
         <appender-ref ref="stdout" />
-        <appender-ref ref="logfile" />
     </root>
+
+    <logger name="com.czh.ArchiveUtil">
+        <level value="info" /><!-- "TRACE", "DEBUG" -->
+        <appender-ref ref="logfile" />
+    </logger>
+    <logger name="com.czh.ArchiveUI">
+        <level value="info" /><!-- "TRACE", "DEBUG" -->
+        <appender-ref ref="logfile" />
+    </logger>
 </configuration>
