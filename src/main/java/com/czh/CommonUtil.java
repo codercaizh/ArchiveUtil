@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,7 +21,7 @@ public class CommonUtil {
 
     private static Map<String,Long> currentTimeMap = new ConcurrentHashMap<>();
 
-    private static Map<String,Boolean> typeMap = new ConcurrentHashMap<String,Boolean>();
+    private static Map<String,AtomicInteger> typeMap = new ConcurrentHashMap<String,AtomicInteger>();
 
     /**
      * 快速复制文件
@@ -215,7 +216,9 @@ public class CommonUtil {
     }
 
     /**
-     * 是否为文件
+     * 是否为文件,由于File的isFile是一个比较耗时的操作，这里做了 类型试探型缓存，具体判断规则如下：
+     * 先提取文件的类型名，如果连续十次判断到同一类型名的File均为文件类型，则将其加入类型缓存，
+     * 如果这十次某一次判断某File为文件夹类型且类型名也为这个，则将该类型名拉入黑名单，之后遇到该类型名则直接调用真实API判断
      * @param file
      * @return
      */
@@ -226,16 +229,56 @@ public class CommonUtil {
             type = file.getName().substring(index).trim().toLowerCase();
             type = type.length() > 0 ? type : null;
         }
+
         if(type == null){
             return file.isFile();
-        }else if(typeMap.containsKey(type)){
-            return true;
-        }else {
-            boolean isFile = file.isFile();
-            if(isFile){
-                typeMap.put(type,isFile);
+        }
+
+        AtomicInteger counter = typeMap.get(type);
+        
+        if(counter != null){
+            return isFile(file, counter);
+        } else{
+            synchronized(type.intern()){
+                counter = typeMap.get(type);
+                if(counter != null){
+                    return isFile(file,counter);
+                }
+                boolean isFile = file.isFile();
+                if(isFile){
+                    counter = new AtomicInteger(1);
+                    typeMap.put(type, counter);
+                }else{
+    
+                    // 第一次就检查出该文件不是文件类型，则直接拉入黑名单
+                    counter = new AtomicInteger(-1);
+                    typeMap.put(type, counter);
+                }
+                return isFile;
             }
-            return isFile;
+        }
+    }
+
+    private static boolean isFile(File file, AtomicInteger counter) {
+        int currentCount = counter.get();
+        if(currentCount < 0){
+
+            // 黑名单处理逻辑
+            return file.isFile();
+        }else if(currentCount < 10){
+
+            // 试探期逻辑
+            if(file.isFile()){
+                counter.incrementAndGet();
+                return true;
+            }else{
+                counter.set(-1);
+                return false;
+            }
+        }else{
+
+            // 缓存逻辑
+            return true;
         }
     }
 }
