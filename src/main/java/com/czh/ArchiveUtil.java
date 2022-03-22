@@ -133,7 +133,7 @@ public class ArchiveUtil {
         if (CommonUtil.isExistDateStr(srcFileName)) {
             String date = CommonUtil.extractDateStr(srcFileName);
             String year = date.substring(0, 4);
-            String month = Integer.parseInt(date.substring(4, 6)) + "";
+            String month = date.substring(4, 6);
             descFileDir = CommonUtil.createDescDir(desDir.getAbsolutePath(), year, month);
         }else{
             descFileDir = CommonUtil.createOtherDir(desDir.getAbsolutePath());

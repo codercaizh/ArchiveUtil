@@ -71,7 +71,7 @@ public class CommonUtil {
         if (dirsContainer.containsKey(key)) {
             return dirsContainer.get(key);
         }
-        File descDirFile = new File(descDirPath + "/" + year + "年/" + month + "月");
+        File descDirFile = new File(descDirPath + "/" + year + "/" + month);
         if (!descDirFile.exists()) {
             descDirFile.mkdirs();
         }
